@@ -48,6 +48,7 @@ jobs:
                 echo "Repository: ${{ github.repository }}"
                 echo "deploy input: ${{ inputs.deploy || 'N/A' }}"
                 echo "node_version input: ${{ inputs.node_version || 'N/A' }}"
+            working-directory: .
 
     test_ubuntu:
         runs-on: ubuntu-latest
