@@ -7,6 +7,13 @@ on:
                 required: true
                 default: false
                 type: boolean
+
+            node_version:
+                description: 'Node.js version (e.g. 18, 20, 22)'
+                required: false
+                default: '22'
+                type: string
+
     push:
         branches: 
             - main
@@ -29,6 +36,18 @@ concurrency:
     cancel-in-progress: true   
 
 jobs:
+    debug:
+        runs-on: ubuntu-latest
+
+        steps:
+          - name: Print GitHub context
+            run: |
+                echo "Event name: ${{ github.event_name }}"
+                echo "commit hash: ${{ github.sha }}"
+                echo "branch name: ${{ github.ref_name }}"
+                echo "Repository: ${{ github.repository }}"
+                echo "deploy input: ${{ inputs.deploy || 'N/A' }}"
+                echo "node_version input: ${{ inputs.node_version || 'N/A' }}"
 
     test_ubuntu:
         runs-on: ubuntu-latest
@@ -39,7 +58,7 @@ jobs:
             - name: Install Nodejs
               uses: actions/setup-node@v6
               with:
-                    node-version: 22
+                    node-version: ${{ inputs.node_version }}
 
             - name: Install dependencies
               run: npm ci
@@ -56,7 +75,7 @@ jobs:
             - name: Install Nodejs
               uses: actions/setup-node@v6
               with:
-                    node-version: 22
+                    node-version: ${{ inputs.node_version }}
 
             - name: Install dependencies
               run: npm ci
@@ -73,7 +92,7 @@ jobs:
             - name: Install Nodejs
               uses: actions/setup-node@v6
               with:
-                  node-version: 22
+                  node-version: ${{ inputs.node_version }}
 
             - name: Install dependencies
               run: npm ci
