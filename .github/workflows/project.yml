@@ -1,0 +1,119 @@
+name: Full Workflow
+on: 
+    workflow_dispatch:
+        inputs: 
+            deploy: 
+                description: 'Run deploy step?'
+                required: true
+                default: false
+                type: boolean
+    push:
+        branches: 
+            - main
+            - 'release/v*'
+    pull_request: 
+        branches: 
+            - main
+
+defaults:
+    run:
+        working-directory: project_demo_page
+
+permissions: 
+    contents: read
+    pages: write
+    id-token: write
+
+concurrency:
+    group: pages
+    cancel-in-progress: true   
+
+jobs:
+
+    test_ubuntu:
+        runs-on: ubuntu-latest
+        steps:
+            - name: check out code
+              uses: actions/checkout@v5
+
+            - name: Install Nodejs
+              uses: actions/setup-node@v6
+              with:
+                    node-version: 22
+
+            - name: Install dependencies
+              run: npm ci
+            
+            - name: Run tests
+              run: npm test
+                    
+    test_windows:
+        runs-on: windows-latest
+        steps:
+            - name: check out code
+              uses: actions/checkout@v5
+
+            - name: Install Nodejs
+              uses: actions/setup-node@v6
+              with:
+                    node-version: 22
+
+            - name: Install dependencies
+              run: npm ci
+            
+            - name: Run tests
+              run: npm test
+    build: 
+        needs: [test_windows, test_ubuntu]
+        runs-on: ubuntu-latest
+        steps: 
+            - name: Get Code from GitHub Repo
+              uses: actions/checkout@v5
+
+            - name: Install Nodejs
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 22
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: run build
+              run: npm run build
+            
+            # run deploy ONLY if needed
+            
+            - name: Deploy to github pages
+              if: |
+                (
+                    github.event_name == 'push' &&
+                    startsWith(github.ref, 'refs/heads/release/')
+                ) ||
+                (
+                    github.event_name == 'workflow_dispatch' &&
+                    inputs.deploy == true
+                )
+              uses: actions/upload-pages-artifact@v3
+              with:
+                path: project_demo_page/dist
+    deploy:
+        needs: build
+        runs-on: ubuntu-latest
+        if: |
+         (
+            github.event_name == 'workflow_dispatch' &&
+            inputs.deploy == true
+         ) ||
+         (
+            github.event_name == 'push' &&
+            startsWith(github.ref, 'refs/heads/release/')
+         )
+
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+
+        steps:
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v4
